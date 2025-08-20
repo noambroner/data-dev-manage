@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Plus, 
@@ -17,7 +17,8 @@ import {
   Clock,
   CheckCircle,
   AlertCircle,
-  Pause
+  Pause,
+  RefreshCw
 } from 'lucide-react';
 
 // סוגי פרויקטים וסטטוסים
@@ -36,60 +37,64 @@ const PROJECT_STATUS = {
   paused: { label: 'מושהה', icon: Pause, color: 'bg-gray-500' }
 };
 
-// נתוני דוגמה לפרויקטים
-const SAMPLE_PROJECTS = [
-  {
-    id: 1,
-    name: 'פלטפורמת פיתוח',
-    description: 'פלטפורמה מתקדמת לניהול פרויקטים ופיתוח',
-    type: 'web',
-    status: 'development',
-    priority: 'high',
-    team: ['אליס', 'בוב', 'צ\'רלי'],
-    progress: 75,
-    startDate: '2024-01-15',
-    dueDate: '2024-03-15',
-    technologies: ['Next.js', 'TypeScript', 'Tailwind CSS']
-  },
-  {
-    id: 2,
-    name: 'אפליקציית ניהול',
-    description: 'אפליקציה לניהול משימות וצוותים',
-    type: 'mobile',
-    status: 'planning',
-    priority: 'medium',
-    team: ['דנה', 'אלי'],
-    progress: 20,
-    startDate: '2024-02-01',
-    dueDate: '2024-05-01',
-    technologies: ['React Native', 'Node.js', 'MongoDB']
-  },
-  {
-    id: 3,
-    name: 'מערכת CRM',
-    description: 'מערכת לניהול קשרי לקוחות',
-    type: 'web',
-    status: 'completed',
-    priority: 'high',
-    team: ['פרנק', 'גרייס'],
-    progress: 100,
-    startDate: '2023-10-01',
-    dueDate: '2023-12-31',
-    technologies: ['Vue.js', 'Laravel', 'PostgreSQL']
-  }
-];
+// ממשק הפרויקט
+interface Project {
+  id: number;
+  name: string;
+  description?: string;
+  type: string;
+  status: string;
+  priority: string;
+  progress: number;
+  team: string[];
+  start_date?: string;
+  due_date?: string;
+  technologies: string[];
+  repository_url?: string;
+  path?: string;
+  created_at: string;
+  updated_at: string;
+}
 
 export default function ProjectsPage() {
-  const [projects] = useState(SAMPLE_PROJECTS);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showCreateModal, setShowCreateModal] = useState(false);
 
+  // טעינת פרויקטים מבסיס הנתונים
+  const loadProjects = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await fetch('/api/projects');
+      if (!response.ok) {
+        throw new Error('שגיאה בטעינת הפרויקטים');
+      }
+      
+      const data = await response.json();
+      setProjects(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'שגיאה לא ידועה');
+      console.error('Error loading projects:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // טעינה ראשונית
+  useEffect(() => {
+    loadProjects();
+  }, []);
+
   // פילטור פרויקטים
   const filteredProjects = projects.filter(project => {
     const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         project.description.toLowerCase().includes(searchTerm.toLowerCase());
+                         (project.description && project.description.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesStatus = filterStatus === 'all' || project.status === filterStatus;
     
     return matchesSearch && matchesStatus;
@@ -104,9 +109,9 @@ export default function ProjectsPage() {
     }
   };
 
-  const ProjectCard = ({ project }: { project: any }) => {
-    const TypeIcon = PROJECT_TYPES[project.type as keyof typeof PROJECT_TYPES].icon;
-    const StatusIcon = PROJECT_STATUS[project.status as keyof typeof PROJECT_STATUS].icon;
+  const ProjectCard = ({ project }: { project: Project }) => {
+    const TypeIcon = PROJECT_TYPES[project.type as keyof typeof PROJECT_TYPES]?.icon || Star;
+    const StatusIcon = PROJECT_STATUS[project.status as keyof typeof PROJECT_STATUS]?.icon || Clock;
     
     return (
       <motion.div
@@ -117,17 +122,17 @@ export default function ProjectsPage() {
       >
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center space-x-3" dir="ltr">
-            <div className={`p-2 rounded-lg ${PROJECT_TYPES[project.type as keyof typeof PROJECT_TYPES].color} text-white`}>
+            <div className={`p-2 rounded-lg ${PROJECT_TYPES[project.type as keyof typeof PROJECT_TYPES]?.color || 'bg-gray-500'} text-white`}>
               <TypeIcon className="w-5 h-5" />
             </div>
             <div>
               <h3 className="text-xl font-bold text-gray-800" dir="rtl">{project.name}</h3>
-              <p className="text-gray-600 text-sm" dir="rtl">{project.description}</p>
+              <p className="text-gray-600 text-sm" dir="rtl">{project.description || 'אין תיאור'}</p>
             </div>
           </div>
-          <div className={`flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-medium ${PROJECT_STATUS[project.status as keyof typeof PROJECT_STATUS].color} text-white`} dir="ltr">
+          <div className={`flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-medium ${PROJECT_STATUS[project.status as keyof typeof PROJECT_STATUS]?.color || 'bg-gray-500'} text-white`} dir="ltr">
             <StatusIcon className="w-4 h-4" />
-            <span dir="rtl">{PROJECT_STATUS[project.status as keyof typeof PROJECT_STATUS].label}</span>
+            <span dir="rtl">{PROJECT_STATUS[project.status as keyof typeof PROJECT_STATUS]?.label || project.status}</span>
           </div>
         </div>
 
@@ -151,28 +156,72 @@ export default function ProjectsPage() {
         <div className="flex items-center justify-between text-sm text-gray-600 mb-3">
           <div className="flex items-center space-x-2" dir="ltr">
             <Users className="w-4 h-4" />
-            <span dir="rtl">צוות: {project.team.join(', ')}</span>
+            <span dir="rtl">צוות: {project.team?.length ? project.team.join(', ') : 'לא הוגדר'}</span>
           </div>
-          <div className="flex items-center space-x-2" dir="ltr">
-            <Calendar className="w-4 h-4" />
-            <span dir="rtl">{project.dueDate}</span>
-          </div>
+          {project.due_date && (
+            <div className="flex items-center space-x-2" dir="ltr">
+              <Calendar className="w-4 h-4" />
+              <span dir="rtl">{new Date(project.due_date).toLocaleDateString('he-IL')}</span>
+            </div>
+          )}
         </div>
 
         {/* Technologies */}
         <div className="flex flex-wrap gap-2">
-          {project.technologies.map((tech: string, index: number) => (
-            <span
-              key={index}
-              className="px-2 py-1 bg-gray-100 text-gray-700 rounded-md text-xs font-medium"
-            >
-              {tech}
-            </span>
-          ))}
+          {project.technologies?.length > 0 ? (
+            project.technologies.map((tech: string, index: number) => (
+              <span
+                key={index}
+                className="px-2 py-1 bg-gray-100 text-gray-700 rounded-md text-xs font-medium"
+              >
+                {tech}
+              </span>
+            ))
+          ) : (
+            <span className="px-2 py-1 bg-gray-100 text-gray-500 rounded-md text-xs">אין טכנולוגיות מוגדרות</span>
+          )}
+        </div>
+
+        {/* Created Date */}
+        <div className="text-xs text-gray-400 mt-4 text-right" dir="rtl">
+          נוצר: {new Date(project.created_at).toLocaleDateString('he-IL')}
         </div>
       </motion.div>
     );
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6 flex items-center justify-center">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full"
+        />
+        <p className="ml-4 text-gray-600 text-lg" dir="rtl">טוען פרויקטים...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6 flex items-center justify-center">
+        <div className="bg-white rounded-xl shadow-lg p-8 max-w-md mx-auto text-center">
+          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-gray-800 mb-2" dir="rtl">שגיאה בטעינת הנתונים</h2>
+          <p className="text-gray-600 mb-4" dir="rtl">{error}</p>
+          <button
+            onClick={loadProjects}
+            className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors flex items-center space-x-2 mx-auto"
+            dir="ltr"
+          >
+            <RefreshCw className="w-4 h-4" />
+            <span dir="rtl">נסה שוב</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
@@ -188,16 +237,28 @@ export default function ProjectsPage() {
               <h1 className="text-4xl font-bold text-gray-800 mb-2">ניהול פרויקטים</h1>
               <p className="text-gray-600">מעקב ושליטה מלאה על כל הפרויקטים שלך</p>
             </div>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setShowCreateModal(true)}
-              className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-3 rounded-lg font-semibold flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-200"
-              dir="ltr"
-            >
-              <Plus className="w-5 h-5" />
-              <span dir="rtl">פרויקט חדש</span>
-            </motion.button>
+            <div className="flex items-center space-x-4" dir="ltr">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={loadProjects}
+                className="bg-gray-500 text-white px-4 py-3 rounded-lg flex items-center space-x-2 hover:bg-gray-600 transition-all duration-200"
+                dir="ltr"
+              >
+                <RefreshCw className="w-5 h-5" />
+                <span dir="rtl">רענן</span>
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setShowCreateModal(true)}
+                className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-3 rounded-lg font-semibold flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-200"
+                dir="ltr"
+              >
+                <Plus className="w-5 h-5" />
+                <span dir="rtl">פרויקט חדש</span>
+              </motion.button>
+            </div>
           </div>
 
           {/* Search and Filters */}
@@ -270,47 +331,62 @@ export default function ProjectsPage() {
         </AnimatePresence>
 
         {/* Empty State */}
-        {filteredProjects.length === 0 && (
+        {filteredProjects.length === 0 && !loading && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="text-center py-12"
           >
             <div className="text-gray-400 text-6xl mb-4">📋</div>
-            <h3 className="text-xl font-semibold text-gray-600 mb-2" dir="rtl">לא נמצאו פרויקטים</h3>
-            <p className="text-gray-500" dir="rtl">נסה לשנות את החיפוש או הפילטרים</p>
+            <h3 className="text-xl font-semibold text-gray-600 mb-2" dir="rtl">
+              {projects.length === 0 ? 'אין פרויקטים עדיין' : 'לא נמצאו פרויקטים'}
+            </h3>
+            <p className="text-gray-500 mb-4" dir="rtl">
+              {projects.length === 0 ? 'צור את הפרויקט הראשון שלך' : 'נסה לשנות את החיפוש או הפילטרים'}
+            </p>
+            {projects.length === 0 && (
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors"
+                dir="rtl"
+              >
+                צור פרויקט ראשון
+              </button>
+            )}
           </motion.div>
         )}
 
         {/* Stats */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4"
-        >
-          <div className="bg-white rounded-xl shadow-lg p-6 text-center">
-            <div className="text-3xl font-bold text-blue-600 mb-2">{projects.length}</div>
-            <div className="text-gray-600" dir="rtl">סך הכל פרויקטים</div>
-          </div>
-          <div className="bg-white rounded-xl shadow-lg p-6 text-center">
-            <div className="text-3xl font-bold text-green-600 mb-2">
-              {projects.filter(p => p.status === 'completed').length}
+        {projects.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4"
+          >
+            <div className="bg-white rounded-xl shadow-lg p-6 text-center">
+              <div className="text-3xl font-bold text-blue-600 mb-2">{projects.length}</div>
+              <div className="text-gray-600" dir="rtl">סך הכל פרויקטים</div>
             </div>
-            <div className="text-gray-600" dir="rtl">הושלמו</div>
-          </div>
-          <div className="bg-white rounded-xl shadow-lg p-6 text-center">
-            <div className="text-3xl font-bold text-yellow-600 mb-2">
-              {projects.filter(p => p.status === 'development').length}
+            <div className="bg-white rounded-xl shadow-lg p-6 text-center">
+              <div className="text-3xl font-bold text-green-600 mb-2">
+                {projects.filter(p => p.status === 'completed').length}
+              </div>
+              <div className="text-gray-600" dir="rtl">הושלמו</div>
             </div>
-            <div className="text-gray-600" dir="rtl">בפיתוח</div>
-          </div>
-          <div className="bg-white rounded-xl shadow-lg p-6 text-center">
-            <div className="text-3xl font-bold text-purple-600 mb-2">
-              {Math.round(projects.reduce((acc, p) => acc + p.progress, 0) / projects.length)}%
+            <div className="bg-white rounded-xl shadow-lg p-6 text-center">
+              <div className="text-3xl font-bold text-yellow-600 mb-2">
+                {projects.filter(p => p.status === 'development').length}
+              </div>
+              <div className="text-gray-600" dir="rtl">בפיתוח</div>
             </div>
-            <div className="text-gray-600" dir="rtl">התקדמות ממוצעת</div>
-          </div>
-        </motion.div>
+            <div className="bg-white rounded-xl shadow-lg p-6 text-center">
+              <div className="text-3xl font-bold text-purple-600 mb-2">
+                {projects.length > 0 ? Math.round(projects.reduce((acc, p) => acc + p.progress, 0) / projects.length) : 0}%
+              </div>
+              <div className="text-gray-600" dir="rtl">התקדמות ממוצעת</div>
+            </div>
+          </motion.div>
+        )}
       </div>
     </div>
   );

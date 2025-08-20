@@ -81,25 +81,25 @@ const pages: PageDocumentation[] = [
     id: 'projects-section',
     name: 'ניהול פרויקטים',
     path: '/projects',
-    description: 'סקציה לניהול וארגון פרויקטים',
+    description: 'סקציה מתקדמת לניהול וארגון פרויקטים עם חיבור ל-PostgreSQL לנתונים בזמן אמת',
     status: 'completed',
     lastModified: '2025-08-20',
-    technologies: ['Next.js 14', 'TypeScript', 'Tailwind CSS', 'Framer Motion'],
-    components: ['ProjectCard', 'SearchFilter', 'ProjectStats', 'ViewModeToggle'],
+    technologies: ['Next.js 14', 'TypeScript', 'PostgreSQL', 'Tailwind CSS', 'Framer Motion', 'Real-time Data'],
+    components: ['ProjectCard', 'SearchFilter', 'ProjectStats', 'ViewModeToggle', 'DataLoader', 'ErrorBoundary'],
     parent: 'root',
     level: 1,
     type: 'section',
-    children: ['projects-list', 'project-create', 'project-details']
+    children: ['projects-list', 'project-create', 'project-details', 'projects-api']
   },
   {
     id: 'projects-list',
     name: 'רשימת פרויקטים',
     path: '/projects',
-    description: 'תצוגת כל הפרויקטים הפעילים והארכיון עם חיפוש וסינון',
+    description: 'תצוגת כל הפרויקטים הפעילים והארכיון עם חיפוש וסינון, מקבלת נתונים מ-PostgreSQL בזמן אמת',
     status: 'completed',
     lastModified: '2025-08-20',
-    technologies: ['Next.js 14', 'TypeScript', 'Tailwind CSS', 'Framer Motion', 'Lucide React'],
-    components: ['ProjectCard', 'SearchBar', 'StatusFilter', 'ViewModeToggle', 'ProgressBar'],
+    technologies: ['Next.js 14', 'TypeScript', 'PostgreSQL', 'Tailwind CSS', 'Framer Motion', 'Lucide React', 'API Integration'],
+    components: ['ProjectCard', 'SearchBar', 'StatusFilter', 'ViewModeToggle', 'ProgressBar', 'DataFetcher', 'LoadingStates'],
     parent: 'projects-section',
     level: 2,
     type: 'page'
@@ -132,29 +132,31 @@ const pages: PageDocumentation[] = [
   },
   {
     id: 'development-section',
-    name: 'כלי פיתוח',
+    name: 'מחלקת פיתוח',
     path: '/development',
-    description: 'סקציה לכלי פיתוח ובדיקות',
-    status: 'planned',
-    lastModified: '2025-08-20',
-    technologies: ['Code Editor', 'Terminal', 'Git'],
-    components: ['CodeEditor', 'Terminal', 'GitManager'],
+    description: 'מרכז כלים מתקדמים לפיתוח, אפיון וניהול פרויקטים טכנולוגיים',
+    status: 'completed',
+    lastModified: '2025-01-20',
+    technologies: ['Next.js 14', 'TypeScript', 'Tailwind CSS', 'Framer Motion', 'Lucide React'],
+    components: ['DevelopmentPage', 'ToolCard', 'StatisticsCards', 'ComingSoonSection'],
     parent: 'root',
     level: 1,
-    type: 'section'
+    type: 'page',
+    children: ['specification-tool']
   },
   {
     id: 'database-section',
     name: 'ניהול בסיס נתונים',
     path: '/database',
-    description: 'ממשק לניהול וצפייה בבסיס הנתונים',
-    status: 'in-progress',
+    description: 'ממשק מתקדם לניהול וצפייה בבסיס נתונים PostgreSQL עם viewer לטבלאות, חיפוש ופונקציות ניהול מתקדמות',
+    status: 'completed',
     lastModified: '2025-08-20',
-    technologies: ['SQLite', 'Database Viewer', 'Query Builder'],
-    components: ['DatabaseViewer', 'QueryBuilder', 'TableManager'],
+    technologies: ['PostgreSQL', 'Next.js 14', 'TypeScript', 'Database Viewer', 'Real-time Data', 'pg Library'],
+    components: ['DatabaseViewer', 'TablesList', 'TableDataViewer', 'SearchFilter', 'PaginationControls', 'ErrorBoundary'],
     parent: 'root',
     level: 1,
-    type: 'section'
+    type: 'section',
+    children: ['database-tables-api', 'database-table-detail-api']
   },
   {
     id: 'team-section',
@@ -196,6 +198,19 @@ const pages: PageDocumentation[] = [
     type: 'page'
   },
   {
+    id: 'specification-tool',
+    name: 'כלי אפיון',
+    path: '/development/specification',
+    description: 'כלי מתקדם לאפיון ותיעוד דרישות פרויקטים',
+    status: 'planned',
+    lastModified: '2025-01-20',
+    technologies: ['React Hook Form', 'File Upload', 'Rich Text Editor'],
+    components: ['SpecificationForm', 'RequirementsEditor', 'FileAttachment'],
+    parent: 'development-section',
+    level: 2,
+    type: 'page'
+  },
+  {
     id: 'settings-section',
     name: 'הגדרות מערכת',
     path: '/settings',
@@ -207,6 +222,45 @@ const pages: PageDocumentation[] = [
     parent: 'root',
     level: 1,
     type: 'section'
+  },
+  {
+    id: 'database-tables-api',
+    name: 'API טבלאות בסיס הנתונים',
+    path: '/api/database/tables',
+    description: 'API לקבלת רשימת כל הטבלאות בבסיס הנתונים עם מטא-דאטה',
+    status: 'completed',
+    lastModified: '2025-08-20',
+    technologies: ['Next.js API Routes', 'PostgreSQL', 'pg Library', 'TypeScript'],
+    components: ['DatabaseAPIHandler', 'TableMetadataExtractor', 'ErrorHandler'],
+    parent: 'database-section',
+    level: 2,
+    type: 'api'
+  },
+  {
+    id: 'database-table-detail-api',
+    name: 'API פרטי טבלה',
+    path: '/api/database/tables/[tableName]',
+    description: 'API דינמי לקבלת נתוני טבלה ספציפית עם עמודות, שורות, חיפוש ופגינציה',
+    status: 'completed',
+    lastModified: '2025-08-20',
+    technologies: ['Next.js Dynamic Routes', 'PostgreSQL', 'Query Parameters', 'Pagination', 'Search'],
+    components: ['DynamicTableAPI', 'QueryBuilder', 'PaginationHandler', 'SearchProcessor'],
+    parent: 'database-section',
+    level: 2,
+    type: 'api'
+  },
+  {
+    id: 'projects-api',
+    name: 'API פרויקטים',
+    path: '/api/projects',
+    description: 'API לקבלת כל הפרויקטים מבסיס הנתונים PostgreSQL',
+    status: 'completed',
+    lastModified: '2025-08-20',
+    technologies: ['Next.js API Routes', 'PostgreSQL', 'pg Library', 'Real-time Data'],
+    components: ['ProjectsAPIHandler', 'DatabaseConnection', 'DataFormatter'],
+    parent: 'projects-section',
+    level: 2,
+    type: 'api'
   }
 ];
 
