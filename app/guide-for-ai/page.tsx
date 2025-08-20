@@ -17,12 +17,13 @@ import {
   Check,
   ChevronRight,
   ChevronDown,
-  AlertTriangle
+  AlertTriangle,
+  Settings
 } from 'lucide-react';
 
 export default function GuideForAI() {
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['session-continuity', 'overview', 'structure', 'sidebar', 'common-mistakes']));
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['session-continuity', 'overview', 'structure', 'troubleshooting', 'sidebar', 'common-mistakes']));
 
   const copyToClipboard = (text: string, sectionId: string) => {
     navigator.clipboard.writeText(text);
@@ -76,20 +77,28 @@ export default function GuideForAI() {
 ## 1. צעדים חובה לפני תחילת עבודה:
 
 \`\`\`bash
-# 1. בדיקת מצב האתר הנוכחי
+# 1. בדיקת מצב האתר הנוכחי - תמיד ראשון!
 curl -I https://dev.bflow.co.il
+curl -I https://dev.bflow.co.il/projects
+curl -I https://dev.bflow.co.il/project-map
+curl -I https://dev.bflow.co.il/guide-for-ai
 
-# 2. בדיקת מה רץ על השרת  
-ssh user@server "ps aux | grep node"
-ssh user@server "systemctl status nginx"
+# 2. בדיקת מה רץ על השרת היעד  
+ssh -i ~/.ssh/ploi_dev_bflow ploi@95.179.254.156 "ps aux | grep node"
+ssh -i ~/.ssh/ploi_dev_bflow ploi@95.179.254.156 "systemctl status nginx"
+ssh -i ~/.ssh/ploi_dev_bflow ploi@95.179.254.156 "netstat -tlnp | grep :3000"
 
-# 3. בדיקת תיקיות קיימות
-ssh user@server "ls -la /path/to/project/"
+# 3. בדיקת מבנה פרויקט נוכחי
+ssh -i ~/.ssh/ploi_dev_bflow ploi@95.179.254.156 "ls -la /home/ploi/dev.bflow.co.il/"
+ssh -i ~/.ssh/ploi_dev_bflow ploi@95.179.254.156 "ls -la /home/ploi/dev.bflow.co.il/app/"
 
-# 4. יצירת BACKUP לפני שינויים
-ssh user@server "cp -r /current/project /backup/\$(date +%Y%m%d-%H%M%S)"
+# 4. בדיקת לוגים לפני שינויים
+ssh -i ~/.ssh/ploi_dev_bflow ploi@95.179.254.156 "tail -20 /tmp/nextjs.log"
 
-# 5. רק אחרי הבדיקות - התחל לעבוד
+# 5. יצירת BACKUP מלא לפני שינויים
+ssh -i ~/.ssh/ploi_dev_bflow ploi@95.179.254.156 "tar -czf /tmp/backup-\$(date +%Y%m%d-%H%M%S).tar.gz /home/ploi/dev.bflow.co.il/"
+
+# 6. רק אחרי הבדיקות - התחל לעבוד
 \`\`\`
 
 ## 2. בדיקת מה כבר קיים בפרויקט:
@@ -157,8 +166,10 @@ git log --oneline -10    # מה השינויים האחרונים
 ## תכונות עיקריות
 - ממשק משתמש מתקדם עם תמיכה מלאה בעברית (RTL)
 - מערכת ניווט דינמית עם sidebar מתקפל
+- **דף ניהול פרויקטים** - חדש! עם חיפוש, סינון וסטטיסטיקות
 - מפת פרויקט מפורטת עם תצוגת עץ הירארכי
-- בסיס נתונים SQLite מובנה
+- מדריך מקיף לסוכני AI עם troubleshooting
+- בסיס נתונים SQLite מובנה  
 - אנימציות מתקדמות עם Framer Motion
 - עיצוב רספונסיבי מושלם
 `
@@ -175,6 +186,8 @@ cursor-plugin/
 ├── app/                          # Next.js App Router
 │   ├── layout.tsx               # Layout ראשי עם Sidebar
 │   ├── page.tsx                 # דף הבית
+│   ├── projects/                # דף ניהול פרויקטים - חדש!
+│   │   └── page.tsx            #   פרויקטים עם חיפוש וסינון
 │   ├── project-map/             # דף מפת הפרויקט
 │   │   └── page.tsx
 │   └── guide-for-ai/            # המדריך הזה
@@ -190,7 +203,13 @@ cursor-plugin/
 │   ├── home/
 │   │   ├── purpose.md           # מטרת דף הבית
 │   │   └── technical.md         # תיעוד טכני
-│   └── project-map/
+│   ├── projects/                # תיעוד דף פרויקטים - חדש!
+│   │   ├── purpose.md           # מטרת דף הפרויקטים  
+│   │   └── technical.md         # תיעוד טכני מפורט
+│   ├── project-map/
+│   │   ├── purpose.md
+│   │   └── technical.md
+│   └── guide-for-ai/
 │       ├── purpose.md
 │       └── technical.md
 ├── guide-for-ai/               # המדריך לסוכני AI
@@ -577,6 +596,123 @@ pm2 logs dev-platform
 
 ## 🚨 אם אתה לא בטוח:
 **עצור ובקש הבהרה במקום להמציא!**
+`
+    },
+    {
+      id: 'troubleshooting',
+      title: '🔧 פתרון בעיות נפוצות',
+      icon: <Settings className="w-5 h-5" />,
+      content: `
+# מדריך פתרון בעיות - חובה לקרוא!
+
+## 🔥 בעיות deployment נפוצות
+
+### 1. שרת לא מגיב / Error 500
+\`\`\`bash
+# בדיקה ראשונה
+curl -I https://dev.bflow.co.il
+ssh -i ~/.ssh/ploi_dev_bflow ploi@95.179.254.156 "tail -20 /tmp/nextjs.log"
+
+# תיקון שלב 1: הפעלה מחדש של שרת
+ssh -i ~/.ssh/ploi_dev_bflow ploi@95.179.254.156 "killall node"
+ssh -i ~/.ssh/ploi_dev_bflow ploi@95.179.254.156 "cd /home/ploi/dev.bflow.co.il && npm start"
+\`\`\`
+
+### 2. EADDRINUSE: Port 3000 כבר תפוס
+\`\`\`bash
+# מציאת התהליך התוקע
+ssh -i ~/.ssh/ploi_dev_bflow ploi@95.179.254.156 "ps aux | grep node"
+ssh -i ~/.ssh/ploi_dev_bflow ploi@95.179.254.156 "netstat -tlnp | grep :3000"
+
+# פתרון מלא
+ssh -i ~/.ssh/ploi_dev_bflow ploi@95.179.254.156 "fuser -k 3000/tcp"
+ssh -i ~/.ssh/ploi_dev_bflow ploi@95.179.254.156 "killall node 2>/dev/null || true"
+ssh -i ~/.ssh/ploi_dev_bflow ploi@95.179.254.156 "pkill -f 'node.*next'"
+\`\`\`
+
+### 3. אלמנטים מוסתרים (opacity:0) - בעיית JavaScript
+\`\`\`bash
+# בדיקה אם CSS/JS קיימים
+curl -I https://dev.bflow.co.il/_next/static/css/ff0c75b37bc80cb6.css
+curl -s https://dev.bflow.co.il | grep -i "opacity:0" | wc -l
+
+# פתרון: rebuild מלא
+ssh -i ~/.ssh/ploi_dev_bflow ploi@95.179.254.156 "cd /home/ploi/dev.bflow.co.il && rm -rf .next node_modules"
+ssh -i ~/.ssh/ploi_dev_bflow ploi@95.179.254.156 "cd /home/ploi/dev.bflow.co.il && npm install && npm run build"
+\`\`\`
+
+### 4. 404 על דף חדש למרות build מוצלח
+\`\`\`bash
+# בדיקה אם הקבצים הועלו
+ssh -i ~/.ssh/ploi_dev_bflow ploi@95.179.254.156 "ls -la /home/ploi/dev.bflow.co.il/app/"
+
+# העלאה מחדש של קבצים חסרים
+tar --exclude='.next' --exclude='node_modules' -czf update.tar.gz app/ project-map/
+scp -i ~/.ssh/ploi_dev_bflow update.tar.gz ploi@95.179.254.156:/tmp/
+ssh -i ~/.ssh/ploi_dev_bflow ploi@95.179.254.156 "cd /home/ploi/dev.bflow.co.il && tar -xzf /tmp/update.tar.gz"
+\`\`\`
+
+## ⚡ תהליך troubleshooting מהיר
+
+### שלב 1: אבחון ראשוני
+\`\`\`bash
+curl -I https://dev.bflow.co.il                    # סטטוס עיקרי
+curl -I https://dev.bflow.co.il/projects          # דף שנוסף
+ssh -i ~/.ssh/ploi_dev_bflow ploi@95.179.254.156 "ps aux | grep node"  # תהליכים
+\`\`\`
+
+### שלב 2: בדיקת לוגים ושגיאות
+\`\`\`bash
+ssh -i ~/.ssh/ploi_dev_bflow ploi@95.179.254.156 "tail -20 /tmp/nextjs.log"
+ssh -i ~/.ssh/ploi_dev_bflow ploi@95.179.254.156 "systemctl status nginx"
+\`\`\`
+
+### שלב 3: תיקון מהיר (לרוב עובד)
+\`\`\`bash
+# עצירה מוחלטת של כל תהליכים
+ssh -i ~/.ssh/ploi_dev_bflow ploi@95.179.254.156 "killall node 2>/dev/null || true"
+ssh -i ~/.ssh/ploi_dev_bflow ploi@95.179.254.156 "fuser -k 3000/tcp 2>/dev/null || true"
+
+# הפעלה מחדש
+ssh -i ~/.ssh/ploi_dev_bflow ploi@95.179.254.156 "cd /home/ploi/dev.bflow.co.il && npm start"
+\`\`\`
+
+## 🚑 אם הכל קרס - תיקון emergency
+
+### מצב חירום מלא (בשימוש מתוחכם)
+\`\`\`bash
+# 1. backup קיים (אם יש)
+ssh -i ~/.ssh/ploi_dev_bflow ploi@95.179.254.156 "tar -czf /tmp/emergency-backup.tar.gz /home/ploi/dev.bflow.co.il/"
+
+# 2. ניקוי מלא
+ssh -i ~/.ssh/ploi_dev_bflow ploi@95.179.254.156 "cd /home/ploi/dev.bflow.co.il && rm -rf .next node_modules package-lock.json"
+
+# 3. החזרה לפעילות
+ssh -i ~/.ssh/ploi_dev_bflow ploi@95.179.254.156 "cd /home/ploi/dev.bflow.co.il && npm install && npm run build && npm start"
+\`\`\`
+
+## 🧪 בדיקות אחרי תיקון
+
+\`\`\`bash
+# בדיקת כל הדפים החשובים
+curl -I https://dev.bflow.co.il
+curl -I https://dev.bflow.co.il/projects
+curl -I https://dev.bflow.co.il/project-map  
+curl -I https://dev.bflow.co.il/guide-for-ai
+
+# בדיקת אלמנטים מוסתרים (צריך להיות 0!)
+curl -s https://dev.bflow.co.il | grep -i "opacity:0" | wc -l
+\`\`\`
+
+## 🎯 כללי זהב לפתרון בעיות
+
+1. **תמיד תתחיל בלוגים** - \`tail -20 /tmp/nextjs.log\`
+2. **בדוק תהליכים תקועים** - \`ps aux | grep node\`  
+3. **נקה לפני rebuild** - \`rm -rf .next node_modules\`
+4. **אל תשכח לבדוק אחרי** - בדיקת כל הדפים
+5. **יצירת backup לפני שינויים גדולים**
+
+**זכור: רוב הבעיות נפתרות עם killall + npm start מחדש!**
 `
     },
     {
