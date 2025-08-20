@@ -72,3 +72,8 @@ pids
 # Temporary folders
 tmp/
 temp/
+
+# Session files
+OpenSession.txt
+*.session
+session_*
