@@ -16,12 +16,13 @@ import {
   Copy,
   Check,
   ChevronRight,
-  ChevronDown
+  ChevronDown,
+  AlertTriangle
 } from 'lucide-react';
 
 export default function GuideForAI() {
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['overview', 'structure', 'sidebar', 'common-mistakes']));
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['session-continuity', 'overview', 'structure', 'sidebar', 'common-mistakes']));
 
   const copyToClipboard = (text: string, sectionId: string) => {
     navigator.clipboard.writeText(text);
@@ -60,6 +61,84 @@ export default function GuideForAI() {
   };
 
   const sections = [
+    {
+      id: 'session-continuity',
+      title: '🚨 התמשכות בין Sessions - חובה לקרוא!',
+      icon: <AlertTriangle className="w-5 h-5" />,
+      content: `
+# 🚨 התמשכות בין Sessions - מדריך קריטי!
+
+## ⚠️ אזהרה קריטית - לפני כל עבודה!
+
+**כשאתה מתחיל session חדש, תמיד תבדוק מה הסטטוס הנוכחי!**
+**אל תניח שאתה יודע מה קיים - תמיד תבדוק!**
+
+## 1. צעדים חובה לפני תחילת עבודה:
+
+\`\`\`bash
+# 1. בדיקת מצב האתר הנוכחי
+curl -I https://dev.bflow.co.il
+
+# 2. בדיקת מה רץ על השרת  
+ssh user@server "ps aux | grep node"
+ssh user@server "systemctl status nginx"
+
+# 3. בדיקת תיקיות קיימות
+ssh user@server "ls -la /path/to/project/"
+
+# 4. יצירת BACKUP לפני שינויים
+ssh user@server "cp -r /current/project /backup/\$(date +%Y%m%d-%H%M%S)"
+
+# 5. רק אחרי הבדיקות - התחל לעבוד
+\`\`\`
+
+## 2. בדיקת מה כבר קיים בפרויקט:
+
+**בדוק את מפת הפרויקט:** https://dev.bflow.co.il/project-map
+
+\`\`\`bash
+ls -la app/              # אילו דפים כבר קיימים
+ls -la components/       # אילו רכיבים כבר יש
+git log --oneline -10    # מה השינויים האחרונים
+\`\`\`
+
+## 3. זיהוי סוג האתר הקיים:
+
+- **🔍 Next.js App:** יש תיקיית \`app/\` עם \`layout.tsx\`
+- **🔍 אתר סטטי:** יש \`index.html\` בתיקיית root
+- **🔍 React SPA:** יש \`public/index.html\` ו-\`src/\`
+- **🔍 וורדפרס:** יש \`wp-config.php\`
+
+**⚠️ אל תחליף סוג אתר בלי אישור מפורש!**
+
+## 4. תהליך deployment בטוח:
+
+1. **✅ צ'ק 1:** יצירת backup מלא
+2. **✅ צ'ק 2:** בדיקה שהשינוי עובד מקומית
+3. **✅ צ'ק 3:** העלאה לתיקיית staging קודם
+4. **✅ צ'ק 4:** בדיקה שהאתר עובד אחרי העלאה
+5. **✅ צ'ק 5:** רק אז החלפה ל-production
+
+## 📋 Check List לפני deployment:
+
+- ☐ בדקתי מה קיים כרגע באתר
+- ☐ יצרתי backup מלא
+- ☐ בדקתי שהשינוי עובד מקומית
+- ☐ וידאתי שאני לא הורס מה שקיים
+- ☐ יש לי תוכנית rollback אם משהו ישתבש
+
+## 🔥 דוגמאות לטעויות חמורות:
+
+❌ **לא לעשות:** "אני אתחיל דף projects חדש"
+✅ **כן לעשות:** "אבדוק אם כבר יש דף projects, ואוסיף עליו"
+
+❌ **לא לעשות:** להעלות Next.js על אתר סטטי בלי לשאול
+✅ **כן לעשות:** לשאול "רואה שיש index.html, לעדכן אותו או ליצור Next.js?"
+
+❌ **לא לעשות:** deployment ישיר לproduction
+✅ **כן לעשות:** backup → staging → בדיקה → production
+`
+    },
     {
       id: 'overview',
       title: 'סקירה כללית של הפרויקט',
@@ -590,6 +669,8 @@ pm2 logs dev-platform
                   🎯 <strong>השתמש בטכנולוגיות הקיימות בלבד!</strong><br/>
                   🎯 <strong>קרא את מפת הפרויקט לפני כל עבודה!</strong><br/>
                   🎯 <strong>יש דוגמאות קוד מלאות במדריך - השתמש בהן!</strong><br/>
+                  🎯 <strong>🚨 BACKUP לפני כל deployment!</strong><br/>
+                  🎯 <strong>🚨 בדוק מה קיים לפני שינויים!</strong><br/>
                   🎯 <strong>אל תמציא דרכים חדשות - יש כבר סטנדרט!</strong>
                 </p>
               </div>
