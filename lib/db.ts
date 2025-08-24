@@ -42,6 +42,8 @@ export async function initializeDatabase() {
         technologies TEXT[], -- PostgreSQL array של טכנולוגיות
         repository_url TEXT,
         path TEXT,
+        archived BOOLEAN DEFAULT FALSE, -- האם הפרויקט בארכיון
+        archived_at TIMESTAMP, -- מתי הועבר לארכיון
         settings JSONB, -- JSON של הגדרות פרויקט
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -103,6 +105,18 @@ export async function initializeDatabase() {
       );
     `);
 
+    // טבלת תהליכים לAI (Process Builder)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS processes (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        steps JSONB NOT NULL DEFAULT '[]', -- array של שלבים עם תוכן מפורט
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
     // יצירת אינדקסים לביצועים
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(status);
@@ -111,7 +125,20 @@ export async function initializeDatabase() {
       CREATE INDEX IF NOT EXISTS idx_activities_project_id ON activities(project_id);
       CREATE INDEX IF NOT EXISTS idx_activities_created_at ON activities(created_at);
       CREATE INDEX IF NOT EXISTS idx_deployments_project_id ON deployments(project_id);
+      CREATE INDEX IF NOT EXISTS idx_processes_updated_at ON processes(updated_at);
     `);
+
+    // הוספת עמודות archived במידה וטבלה כבר קיימת
+    try {
+      await client.query(`
+        ALTER TABLE projects 
+        ADD COLUMN IF NOT EXISTS archived BOOLEAN DEFAULT FALSE,
+        ADD COLUMN IF NOT EXISTS archived_at TIMESTAMP;
+      `);
+      console.log('✅ Archive columns added/checked successfully');
+    } catch (error) {
+      console.log('ℹ️ Archive columns already exist or error adding:', error);
+    }
 
     console.log('✅ PostgreSQL Database initialized successfully');
   } catch (error) {
@@ -126,7 +153,12 @@ export async function initializeDatabase() {
 export const queries = {
   // Projects
   async getAllProjects() {
-    const result = await pool.query('SELECT * FROM projects ORDER BY updated_at DESC');
+    const result = await pool.query('SELECT * FROM projects WHERE archived = FALSE ORDER BY updated_at DESC');
+    return result.rows;
+  },
+
+  async getArchivedProjects() {
+    const result = await pool.query('SELECT * FROM projects WHERE archived = TRUE ORDER BY archived_at DESC');
     return result.rows;
   },
 
@@ -207,6 +239,24 @@ export const queries = {
   async updateProjectLastOpened(id: number) {
     const query = 'UPDATE projects SET last_opened = CURRENT_TIMESTAMP WHERE id = $1';
     await pool.query(query, [id]);
+  },
+
+  async deleteProject(id: number) {
+    const query = 'DELETE FROM projects WHERE id = $1 RETURNING *';
+    const result = await pool.query(query, [id]);
+    return result.rows[0];
+  },
+
+  async archiveProject(id: number) {
+    const query = 'UPDATE projects SET archived = TRUE, archived_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING *';
+    const result = await pool.query(query, [id]);
+    return result.rows[0];
+  },
+
+  async unarchiveProject(id: number) {
+    const query = 'UPDATE projects SET archived = FALSE, archived_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING *';
+    const result = await pool.query(query, [id]);
+    return result.rows[0];
   },
   
   // Users
@@ -400,6 +450,63 @@ export const queries = {
   async getTableRowCount(tableName: string) {
     const result = await pool.query(`SELECT COUNT(*) as count FROM ${tableName}`);
     return parseInt(result.rows[0].count);
+  },
+
+  // Processes (Process Builder)
+  async getAllProcesses() {
+    const result = await pool.query('SELECT * FROM processes ORDER BY updated_at DESC');
+    return result.rows;
+  },
+
+  async getProcessById(id: number) {
+    const result = await pool.query('SELECT * FROM processes WHERE id = $1', [id]);
+    return result.rows[0] || null;
+  },
+
+  async createProcess(data: {
+    name: string;
+    description?: string;
+    steps: any[];
+  }) {
+    const query = `
+      INSERT INTO processes (name, description, steps)
+      VALUES ($1, $2, $3)
+      RETURNING *
+    `;
+    const values = [
+      data.name,
+      data.description || null,
+      JSON.stringify(data.steps)
+    ];
+    const result = await pool.query(query, values);
+    return result.rows[0];
+  },
+
+  async updateProcess(id: number, data: {
+    name: string;
+    description?: string;
+    steps: any[];
+  }) {
+    const query = `
+      UPDATE processes 
+      SET name = $2, description = $3, steps = $4, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $1
+      RETURNING *
+    `;
+    const values = [
+      id,
+      data.name,
+      data.description || null,
+      JSON.stringify(data.steps)
+    ];
+    const result = await pool.query(query, values);
+    return result.rows[0];
+  },
+
+  async deleteProcess(id: number) {
+    const query = 'DELETE FROM processes WHERE id = $1 RETURNING *';
+    const result = await pool.query(query, [id]);
+    return result.rows[0];
   }
 };
 

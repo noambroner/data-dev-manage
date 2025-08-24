@@ -23,7 +23,7 @@ import {
 
 export default function GuideForAI() {
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['session-continuity', 'when-to-stop', 'overview', 'structure', 'troubleshooting', 'sidebar', 'common-mistakes']));
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['session-continuity', 'when-to-stop', 'overview', 'structure', 'next14-architecture', 'troubleshooting', 'sidebar', 'common-mistakes']));
 
   const copyToClipboard = (text: string, sectionId: string) => {
     navigator.clipboard.writeText(text);
@@ -172,8 +172,10 @@ git log --oneline -10    # מה השינויים האחרונים
 ## תכונות עיקריות
 - ממשק משתמש מתקדם עם תמיכה מלאה בעברית (RTL)
 - מערכת ניווט דינמית עם sidebar מתקפל
-- **דף ניהול פרויקטים** - חדש! עם חיפוש, סינון וסטטיסטיקות
-- מפת פרויקט מפורטת עם תצוגת עץ הירארכי
+- **דף ניהול פרויקטים** - מלא! עם חיפוש, סינון, סטטיסטיקות וארכיון
+- **מפת פרויקט דינמית** - קוראת נתונים מ-PostgreSQL בזמן אמת
+- **מערכת ארכיון מלאה** - פרויקטים ארכיביים בדף נפרד
+- **כפתור עדכון מיפוי** - מעדכן את מפת הפרויקט מהDB
 - מדריך מקיף לסוכני AI עם troubleshooting
 - בסיס נתונים SQLite מובנה  
 - אנימציות מתקדמות עם Framer Motion
@@ -192,38 +194,61 @@ cursor-plugin/
 ├── app/                          # Next.js App Router
 │   ├── layout.tsx               # Layout ראשי עם Sidebar
 │   ├── page.tsx                 # דף הבית
-│   ├── projects/                # דף ניהול פרויקטים - חדש!
-│   │   └── page.tsx            #   פרויקטים עם חיפוש וסינון
-│   ├── project-map/             # דף מפת הפרויקט
+│   ├── projects/                # 🔥 ניהול פרויקטים - Server+Client!
+│   │   ├── page.tsx            #   Server Component (Dynamic)
+│   │   ├── ProjectsClientComponent.tsx  # Client Component
+│   │   └── [id]/page.tsx       #   דף פרויקט יחיד (Dynamic route)
+│   ├── archived/                # 🆕 דף פרויקטים בארכיון
+│   │   └── page.tsx            #   הצגת פרויקטים ארכיביים
+│   ├── project-map/             # 🔥 מפת פרויקט דינמית
+│   │   ├── page.tsx            #   Server Component (קורא מ-PostgreSQL)
+│   │   └── ProjectMapClient.tsx #   Client Component
+│   ├── guide-for-ai/            # המדריך הזה
 │   │   └── page.tsx
-│   └── guide-for-ai/            # המדריך הזה
-│       └── page.tsx
+│   └── api/                     # 🆕 API Routes - PostgreSQL Integration
+│       ├── projects/            #   APIs לניהול פרויקטים
+│       │   ├── route.ts        #   GET/POST לכל הפרויקטים
+│       │   ├── [id]/route.ts   #   GET/PUT/DELETE לפרויקט יחיד
+│       │   ├── [id]/archive/   #   API להעברה לארכיון
+│       │   │   └── route.ts
+│       │   └── archived/       #   API לפרויקטים בארכיון
+│       │       └── route.ts
+│       └── project-map/         #   API עדכון מפת פרויקט
+│           └── update/
+│               └── route.ts    #   מעדכן מפה עם נתונים מה-DB
 ├── components/                   # רכיבי React
-│   └── Sidebar.tsx              # תפריט ניווט צידי
-├── lib/                         # ספריות ועזרים
-│   ├── db.ts                    # הגדרות SQLite
-│   └── types.ts                 # הגדרות TypeScript
+│   ├── Sidebar.tsx              # תפריט ניווט (+ קישור ארכיון)
+│   ├── ProjectCard.tsx          # כרטיס פרויקט
+│   └── CreateProjectForm.tsx    # טופס יצירת פרויקט
+├── lib/                         # 🔥 PostgreSQL Integration
+│   ├── db.ts                    # PostgreSQL queries (queries object)
+│   └── types.ts                 # TypeScript definitions
 ├── styles/                      # סטיילים
 │   └── globals.css              # CSS גלובלי + Tailwind
 ├── project-map/                 # תיעוד הפרויקט
 │   ├── home/
 │   │   ├── purpose.md           # מטרת דף הבית
 │   │   └── technical.md         # תיעוד טכני
-│   ├── projects/                # תיעוד דף פרויקטים - חדש!
-│   │   ├── purpose.md           # מטרת דף הפרויקטים  
-│   │   └── technical.md         # תיעוד טכני מפורט
+│   ├── projects/                # 🔥 תיעוד מעודכן
+│   │   ├── purpose.md           # כולל ארכיון ומיפוי
+│   │   └── technical.md         # Server+Client ארכיטקטורה
 │   ├── project-map/
 │   │   ├── purpose.md
 │   │   └── technical.md
 │   └── guide-for-ai/
 │       ├── purpose.md
 │       └── technical.md
-├── guide-for-ai/               # המדריך לסוכני AI
 ├── scripts/                    # סקריפטי deployment
 │   ├── deploy.sh               # פריסה לשרת
-│   └── setup-ssh.sh            # הגדרת SSH
-├── data/                       # בסיס נתונים SQLite
+│   └── setup-ssh.sh            # הגדרת SSH (noamp14_bflow)
 └── public/                     # קבצים סטטיים
+
+# 🔥 מאפיינים מתקדמים:
+- Server Components קוראים ישירות מ-PostgreSQL
+- Client Components מטפלים ב-UI ואינטראקציות
+- export const dynamic = 'force-dynamic' בכל הדפים הדינמיים
+- מערכת ארכיון מלאה עם APIs ייעודיים
+- כפתור "עדכן מיפוי פרויקט" מעדכן מה-DB
 \`\`\`
 `
     },
@@ -245,8 +270,11 @@ cursor-plugin/
 - **Lucide React 0.295.0** - ספריית איקונים מודרנית
 
 ## Database
-- **Better SQLite3 9.2.2** - בסיס נתונים מקומי
-- **SQLite Schema** - טבלאות: projects, users, activities, configurations
+- **PostgreSQL** - בסיס נתונים ראשי (production)
+- **Connection:** Environment variables ב-.env.local
+- **Schema:** projects (עם מערכת ארכיון מלאה), users, activities
+- **Archive System:** archived, archived_at columns
+- **Dynamic Data:** Server Components קוראים ישירות מהDB
 
 ## Development Tools
 - **PostCSS 8.4.32** - מעבד CSS
@@ -490,8 +518,10 @@ export default function NewPageName() {
 ## שרת Production
 - **כתובת:** 95.179.254.156
 - **משתמש:** ploi
+- **SSH Key:** ~/.ssh/noamp14_bflow (לא ploi_dev_bflow!)
 - **ניהול:** PLOI platform
 - **SSL:** Let's Encrypt (אוטומטי)
+- **Database:** PostgreSQL (לא SQLite!)
 
 ## פקודות פריסה מהירה:
 
@@ -605,6 +635,185 @@ pm2 logs dev-platform
 `
     },
     {
+      id: 'next14-architecture',
+      title: '🏗️ Next.js 14 - Server + Client Components',
+      icon: <Database className="w-5 h-5" />,
+      content: `
+# Next.js 14 ארכיטקטורה מתקדמת - החדשנות שלנו!
+
+## 🚨 בעיית Static Rendering ופתרון מהפכני
+
+### הבעיה שפתרנו:
+❌ **דפים נבנו כסטטיים** ולא הציגו נתונים דינמיים:
+\`\`\`
+○ /projects     (Static)   - לא עובד!
+○ /project-map  (Static)   - לא מעודכן!
+\`\`\`
+
+### הפתרון המהפכני:
+✅ **Server + Client Components Architecture:**
+\`\`\`
+ƒ /projects     (Dynamic)  - עובד מושלם!
+ƒ /project-map  (Dynamic)  - נתונים חיים!
+\`\`\`
+
+## 🏗️ המבנה החדש - Server + Client:
+
+### Server Component (page.tsx):
+\`\`\`typescript
+import { queries } from '@/lib/db';
+import ProjectsClientComponent from './ProjectsClientComponent';
+
+// כפיית Dynamic rendering
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+// Server Component - קורא נתונים מהDB
+export default async function ProjectsPage() {
+  console.log('🔍 Server Component - Loading from DB...');
+  
+  try {
+    // קריאה ישירה לDB במקום API
+    const projects = await queries.getAllProjects();
+    console.log('🔍 Server Component - Projects loaded:', projects.length);
+    
+    return <ProjectsClientComponent initialProjects={projects} />;
+  } catch (error) {
+    console.error('🚨 Server Component error:', error);
+    return <ErrorComponent />;
+  }
+}
+\`\`\`
+
+### Client Component (ProjectsClientComponent.tsx):
+\`\`\`typescript
+'use client';
+
+import { useState } from 'react';
+import { motion } from 'framer-motion';
+
+interface ProjectsClientComponentProps {
+  initialProjects: Project[];
+}
+
+export default function ProjectsClientComponent({ initialProjects }: ProjectsClientComponentProps) {
+  const [projects, setProjects] = useState<Project[]>(initialProjects);
+  
+  // כל ה-UI והאינטראקציות כאן
+  return (
+    <motion.div>
+      {/* UI components */}
+    </motion.div>
+  );
+}
+\`\`\`
+
+## 🎯 יתרונות הארכיטקטורה החדשה:
+
+1. **נתונים בזמן אמת** - Server קורא מהDB בכל טעינת דף
+2. **ביצועים מעולים** - נתונים ראשוניים מגיעים מהשרת
+3. **UI אינטראקטיבי** - Client Component מטפל באינטראקציות
+4. **טעינה מהירה** - SSR עם hydration חכמה
+
+## ⚡ כללי זהב לפיתוח עם Next.js 14:
+
+### 1. כפיית Dynamic Rendering:
+\`\`\`typescript
+// בכל דף שצריך נתונים דינמיים
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+\`\`\`
+
+### 2. חלוקת אחריות נכונה:
+- **Server Component:** נתונים מ-DB, לוגיקה עסקית
+- **Client Component:** UI, state management, אירועים
+
+### 3. העברת נתונים:
+\`\`\`typescript
+// Server → Client דרך props
+return <ClientComponent initialData={serverData} />;
+\`\`\`
+
+### 4. בדיקת Build Output:
+\`\`\`bash
+npm run build
+# חפש:
+ƒ /your-page    - טוב! (Dynamic)
+○ /your-page    - רע! (Static)
+\`\`\`
+
+## 🚨 טעויות שתמנע:
+
+❌ **לא לעשות:** רק Client Component עם useEffect
+\`\`\`typescript
+// זה לא יעבוד טוב
+'use client';
+export default function Page() {
+  const [data, setData] = useState([]);
+  
+  useEffect(() => {
+    fetch('/api/data').then(/* ... */);
+  }, []);
+  // ...
+}
+\`\`\`
+
+✅ **כן לעשות:** Server + Client Combo
+\`\`\`typescript
+// Server Component
+export default async function Page() {
+  const data = await getDataFromDB();
+  return <ClientComponent initialData={data} />;
+}
+\`\`\`
+
+## 🔧 Troubleshooting Next.js 14:
+
+### בעיה: דף לא מציג נתונים
+\`\`\`bash
+# בדיקה 1: האם זה Dynamic?
+npm run build | grep "your-page"
+
+# אם ○ (Static) - הוסף:
+export const dynamic = 'force-dynamic';
+\`\`\`
+
+### בעיה: שגיאות hydration
+\`\`\`bash
+# כנראה יש מיקס של Server/Client rendering
+# וודא ש-'use client' בקובץ הנכון
+\`\`\`
+
+### בעיה: נתונים לא מעודכנים
+\`\`\`bash
+# אולי עדיין cached - הוסף:
+export const revalidate = 0;
+\`\`\`
+
+## 📋 Template לדף חדש דינמי:
+
+\`\`\`typescript
+import { queries } from '@/lib/db';
+import YourClientComponent from './YourClientComponent';
+
+// כפיית Dynamic rendering
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+export default async function YourPage() {
+  try {
+    const data = await queries.getYourData();
+    return <YourClientComponent initialData={data} />;
+  } catch (error) {
+    return <div>שגיאה בטעינת נתונים</div>;
+  }
+}
+\`\`\`
+
+**זה המבנה החדש שעובד מושלם עם PostgreSQL + Next.js 14!**
+`,
+    },
+    {
       id: 'troubleshooting',
       title: '🔧 פתרון בעיות נפוצות',
       icon: <Settings className="w-5 h-5" />,
@@ -613,13 +822,15 @@ pm2 logs dev-platform
 
 ## 🔥 בעיות deployment נפוצות
 
-### 0. מפתח SSH לא נמצא
+### 0. מפתח SSH הנכון - שינוי קריטי!
 \`\`\`bash
-# אם קיבלת שגיאה "No such file or directory" על ~/.ssh/ploi_dev_bflow
-ls -la ~/.ssh/                              # בדיקת מפתחות זמינים
-# תמצא קובץ כמו: noamp14_bflow או ploi_key וכו'
-# השתמש בו במקום ploi_dev_bflow בכל הפקודות הבאות
-ssh -i ~/.ssh/YOUR_ACTUAL_KEY ploi@95.179.254.156 "echo 'connection test'"
+# ⚠️ המפתח הנכון הוא: ~/.ssh/noamp14_bflow
+# לא ploi_dev_bflow כמו שכתוב במדריכים ישנים!
+ls -la ~/.ssh/noamp14_bflow                 # בדוק שהמפתח קיים
+ssh -i ~/.ssh/noamp14_bflow ploi@95.179.254.156 "echo 'connection test'"
+
+# אם עדיין אין, בדוק מה יש:
+ls -la ~/.ssh/ | grep -E "(bflow|ploi|noam)"
 \`\`\`
 
 ### 1. שרת לא מגיב / Error 500
@@ -633,16 +844,40 @@ ssh -i ~/.ssh/YOUR_KEY ploi@95.179.254.156 "killall node"
 ssh -i ~/.ssh/YOUR_KEY ploi@95.179.254.156 "cd /home/ploi/dev.bflow.co.il && npm start"
 \`\`\`
 
-### 2. EADDRINUSE: Port 3000 כבר תפוס
+### 2. EADDRINUSE: Port 3000 כבר תפוס - שכיח מאוד!
 \`\`\`bash
 # מציאת התהליך התוקע
-ssh -i ~/.ssh/ploi_dev_bflow ploi@95.179.254.156 "ps aux | grep node"
-ssh -i ~/.ssh/ploi_dev_bflow ploi@95.179.254.156 "netstat -tlnp | grep :3000"
+ssh -i ~/.ssh/noamp14_bflow ploi@95.179.254.156 "ps aux | grep node"
+ssh -i ~/.ssh/noamp14_bflow ploi@95.179.254.156 "ss -tulpn | grep :3000"
 
-# פתרון מלא
-ssh -i ~/.ssh/ploi_dev_bflow ploi@95.179.254.156 "fuser -k 3000/tcp"
-ssh -i ~/.ssh/ploi_dev_bflow ploi@95.179.254.156 "killall node 2>/dev/null || true"
-ssh -i ~/.ssh/ploi_dev_bflow ploi@95.179.254.156 "pkill -f 'node.*next'"
+# פתרון מושלם - נבדק ועובד!
+ssh -i ~/.ssh/noamp14_bflow ploi@95.179.254.156 "pkill -f node && fuser -k 3000/tcp && killall node 2>/dev/null || true"
+
+# או צעד אחר צעד:
+ssh -i ~/.ssh/noamp14_bflow ploi@95.179.254.156 "kill -9 \$(ss -tulpn | grep :3000 | awk '{print \$7}' | cut -d'=' -f2 | cut -d',' -f1)"
+\`\`\`
+
+### 2.1. בעיות Static vs Dynamic Rendering - חדש!
+\`\`\`bash
+# בדיקה אם הדף נבנה כ-Static במקום Dynamic
+npm run build | grep "projects\\|project-map"
+
+# אם רואה ○ (Static) במקום ƒ (Dynamic):
+# הוסף בקובץ page.tsx:
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+# rebuild ו-restart:
+ssh -i ~/.ssh/noamp14_bflow ploi@95.179.254.156 "cd /home/ploi/dev.bflow.co.il && pkill -f node && rm -rf .next && npm run build && npm start &"
+\`\`\`
+
+### 2.2. בעיות PostgreSQL Connection
+\`\`\`bash
+# בדיקת חיבור לDB:
+ssh -i ~/.ssh/noamp14_bflow ploi@95.179.254.156 "cd /home/ploi/dev.bflow.co.il && node -e \"const { queries } = require('./lib/db.js'); queries.getAllProjects().then(p => console.log('DB OK:', p.length)).catch(e => console.error('DB Error:', e))\""
+
+# אם יש שגיאה - בדוק .env.local:
+ssh -i ~/.ssh/noamp14_bflow ploi@95.179.254.156 "cat /home/ploi/dev.bflow.co.il/.env.local"
 \`\`\`
 
 ### 3. אלמנטים מוסתרים (opacity:0) - בעיית JavaScript
@@ -915,10 +1150,12 @@ curl -s https://dev.bflow.co.il | grep -i "opacity:0" | wc -l
 - **strict mode** מופעל
 
 ## בסיס נתונים:
-- **SQLite** - קובץ local
-- **Better-sqlite3** - ספריית הגישה
-- **Prepared statements** - לביצועים
-- **Transaction safe** - לעדכונים מרובים
+- **PostgreSQL** - בסיס נתונים ראשי (production)
+- **Connection** - דרך environment variables
+- **queries object** - ב-lib/db.ts לכל הפעולות
+- **Archive system** - עמודות archived, archived_at
+- **Server Components** - קריאה ישירה מהDB
+- **Dynamic rendering** - export const dynamic = 'force-dynamic'
 `
     }
   ];

@@ -14,7 +14,8 @@ import {
   Menu,
   X,
   Map,
-  GitBranch 
+  GitBranch,
+  Archive
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -44,6 +45,12 @@ const menuItems: MenuItem[] = [
     icon: <FolderOpen size={20} />,
     href: '/projects',
     badge: 3,
+  },
+  {
+    id: 'archived',
+    label: 'ארכיון',
+    icon: <Archive size={20} />,
+    href: '/archived',
   },
   {
     id: 'development',
